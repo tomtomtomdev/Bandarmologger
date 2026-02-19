@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bandarmologger - Screener & Bandar Flow</title>
+  <style>
+    :root {
+      --bg: #0a0e17;
+      --bg2: #111827;
+      --bg3: #1f2937;
+      --border: #374151;
+      --text: #e5e7eb;
+      --text2: #9ca3af;
+      --green: #10b981;
+      --red: #ef4444;
+      --blue: #3b82f6;
+      --yellow: #f59e0b;
+      --purple: #8b5cf6;
+      --cyan: #06b6d4;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    .header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header h1 { font-size: 18px; font-weight: 700; }
+    .header h1 span { color: var(--cyan); }
+    .header-right { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text2); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .status-dot.live { background: var(--green); animation: pulse 2s infinite; }
+    .status-dot.idle { background: var(--yellow); }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .btn { background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: background 0.2s; }
+    .btn:hover { background: var(--border); }
+    .btn.primary { background: var(--blue); border-color: var(--blue); }
+    .btn.primary:hover { background: #2563eb; }
+
+    .container { max-width: 1400px; margin: 0 auto; padding: 16px; }
+
+    /* Tab nav */
+    .tabs { display: flex; gap: 4px; margin-bottom: 16px; background: var(--bg2); padding: 4px; border-radius: 8px; overflow-x: auto; }
+    .tab { padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text2); white-space: nowrap; transition: all 0.2s; border: none; background: none; }
+    .tab.active { background: var(--blue); color: white; }
+    .tab:hover:not(.active) { background: var(--bg3); color: var(--text); }
+
+    /* Grid */
+    .grid { display: grid; gap: 12px; }
+    .grid-2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+    /* Card */
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      transition: border-color 0.2s;
+    }
+    .card:hover { border-color: var(--blue); }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .card-title { font-size: 14px; font-weight: 600; }
+    .card-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+    .badge-green { background: rgba(16,185,129,0.15); color: var(--green); }
+    .badge-red { background: rgba(239,68,68,0.15); color: var(--red); }
+    .badge-blue { background: rgba(59,130,246,0.15); color: var(--blue); }
+    .badge-purple { background: rgba(139,92,246,0.15); color: var(--purple); }
+    .badge-yellow { background: rgba(245,158,11,0.15); color: var(--yellow); }
+
+    /* Best Pick */
+    .best-picks-section { margin-bottom: 20px; }
+    .best-picks-section h2 { font-size: 16px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+
+    /* Stock table */
+    .stock-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .stock-table th { text-align: left; padding: 8px 10px; color: var(--text2); font-weight: 500; border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stock-table td { padding: 8px 10px; border-bottom: 1px solid rgba(55,65,81,0.5); }
+    .stock-table tr { cursor: pointer; transition: background 0.15s; }
+    .stock-table tbody tr:hover { background: var(--bg3); }
+    .stock-symbol { font-weight: 600; color: var(--cyan); }
+    .stock-name { color: var(--text2); font-size: 12px; }
+    .price-up { color: var(--green); }
+    .price-down { color: var(--red); }
+    .price-flat { color: var(--text2); }
+
+    /* Screener card */
+    .screener-card { cursor: pointer; }
+    .screener-card .count { font-size: 24px; font-weight: 700; color: var(--cyan); }
+    .screener-card .label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+    /* Detail panel */
+    .detail-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 200;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 60px;
+      overflow-y: auto;
+    }
+    .detail-overlay.open { display: flex; }
+    .detail-panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 90%;
+      max-width: 900px;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 20px;
+      margin-bottom: 40px;
+    }
+    .detail-panel .close-btn {
+      float: right; background: none; border: none; color: var(--text2);
+      font-size: 20px; cursor: pointer; padding: 4px 8px;
+    }
+    .detail-panel .close-btn:hover { color: var(--text); }
+    .detail-panel h2 { font-size: 18px; margin-bottom: 16px; }
+
+    /* Stock detail */
+    .stock-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+    .stat-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(55,65,81,0.3); font-size: 13px; }
+    .stat-label { color: var(--text2); }
+    .stat-value { font-weight: 500; }
+
+    /* Flow bar */
+    .flow-bar { display: flex; height: 24px; border-radius: 6px; overflow: hidden; margin: 8px 0; }
+    .flow-bar .foreign { background: var(--blue); }
+    .flow-bar .domestic { background: var(--yellow); }
+    .flow-legend { display: flex; gap: 16px; font-size: 12px; color: var(--text2); }
+    .flow-legend span::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+    .flow-legend .leg-foreign::before { background: var(--blue); }
+    .flow-legend .leg-domestic::before { background: var(--yellow); }
+
+    /* Loading */
+    .loading { text-align: center; padding: 40px; color: var(--text2); }
+    .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Market mover mini */
+    .mover-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(55,65,81,0.3); }
+    .mover-item:last-child { border: none; }
+    .mover-rank { width: 20px; font-size: 11px; color: var(--text2); }
+
+    /* Token banner */
+    .token-banner {
+      background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(239,68,68,0.15));
+      border: 1px solid var(--yellow);
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .token-banner.show { display: block; }
+    .token-banner h3 { font-size: 14px; margin-bottom: 8px; color: var(--yellow); }
+    .token-banner p { font-size: 13px; color: var(--text2); margin-bottom: 12px; line-height: 1.5; }
+    .token-input-row { display: flex; gap: 8px; }
+    .token-input-row input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 6px; font-size: 13px; font-family: monospace; }
+    .token-input-row input::placeholder { color: var(--text2); }
+
+    /* Settings btn */
+    .settings-btn { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 16px; padding: 4px; }
+    .settings-btn:hover { color: var(--text); }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .stock-detail-grid { grid-template-columns: 1fr; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1><span>Bandar</span>mologger</h1>
+    <div class="header-right">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Loading...</span>
+      <span id="lastRefresh"></span>
+      <button class="settings-btn" onclick="toggleTokenBanner()" title="Settings">&#9881;</button>
+      <button class="btn primary" onclick="forceRefresh()">Refresh</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Token Banner -->
+    <div class="token-banner" id="tokenBanner">
+      <h3>Stockbit Token Required</h3>
+      <p>Your Stockbit API token has expired or is missing. To get a fresh token:<br>
+        1. Open Stockbit app/web and log in<br>
+        2. Use a proxy tool (ProxSeer/Charles) to capture any API request<br>
+        3. Copy the Bearer token from the Authorization header<br>
+        4. Paste it below and click Save
+      </p>
+      <div class="token-input-row">
+        <input type="text" id="tokenInput" placeholder="Paste your Bearer token here (eyJ...)" />
+        <button class="btn primary" onclick="saveToken()">Save & Refresh</button>
+      </div>
+    </div>
+
+    <!-- Best Picks -->
+    <div class="best-picks-section" id="bestPicksSection">
+      <h2>Today's Best Picks <span class="card-badge badge-green" id="pickCount">0</span></h2>
+      <div class="card">
+        <table class="stock-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Symbol</th>
+              <th>Score</th>
+              <th>Categories</th>
+              <th>Screeners</th>
+            </tr>
+          </thead>
+          <tbody id="bestPicksBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs" id="categoryTabs"></div>
+
+    <!-- Market Movers (always visible) -->
+    <div class="grid grid-4" id="marketMovers" style="margin-bottom: 16px;"></div>
+
+    <!-- Screener Content -->
+    <div id="screenerContent">
+      <div class="loading">
+        <div class="spinner"></div>
+        <div>Loading screener data...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail Overlay -->
+  <div class="detail-overlay" id="detailOverlay" onclick="if(event.target===this)closeDetail()">
+    <div class="detail-panel" id="detailPanel"></div>
+  </div>
+
+  <script>
+    let dashboardData = null;
+    let activeTab = null;
+    let autoRefreshTimer = null;
+
+    async function fetchDashboard() {
+      try {
+        const res = await fetch('/api/dashboard');
+        dashboardData = await res.json();
+        render();
+      } catch (e) {
+        document.getElementById('screenerContent').innerHTML =
+          `<div class="loading"><div style="color:var(--red)">Failed to load: ${e.message}</div><button class="btn primary" style="margin-top:12px" onclick="fetchDashboard()">Retry</button></div>`;
+      }
+    }
+
+    async function forceRefresh() {
+      document.getElementById('statusText').textContent = 'Refreshing...';
+      try {
+        const res = await fetch('/api/refresh', { method: 'POST' });
+        const data = await res.json();
+        if (data.data) {
+          dashboardData = data.data;
+          render();
+        }
+      } catch (e) {
+        alert('Refresh failed: ' + e.message);
+      }
+    }
+
+    function render() {
+      if (!dashboardData) return;
+      // Auto-show token banner if expired
+      if (dashboardData.tokenExpired) {
+        document.getElementById('tokenBanner').classList.add('show');
+      }
+      renderStatus();
+      renderBestPicks();
+      renderTabs();
+      renderMarketMovers();
+      renderActiveTab();
+      setupAutoRefresh();
+    }
+
+    function renderStatus() {
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
+      const refresh = document.getElementById('lastRefresh');
+
+      if (dashboardData.isTradingHours) {
+        dot.className = 'status-dot live';
+        text.textContent = 'LIVE';
+      } else if (dashboardData.isTradingDay) {
+        dot.className = 'status-dot idle';
+        text.textContent = 'Trading Day';
+      } else {
+        dot.className = 'status-dot idle';
+        text.textContent = 'Market Closed';
+      }
+
+      if (dashboardData.lastRefresh) {
+        const d = new Date(dashboardData.lastRefresh);
+        refresh.textContent = `Updated: ${d.toLocaleTimeString('id-ID')}`;
+      }
+    }
+
+    function renderBestPicks() {
+      const picks = dashboardData.bestPicks || [];
+      document.getElementById('pickCount').textContent = picks.length;
+      const tbody = document.getElementById('bestPicksBody');
+
+      if (!picks.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:20px">No picks available yet. Data is loading...</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = picks.map((p, i) => {
+        const screenerList = (p.screeners || []).join(', ');
+        return `<tr onclick="openStockDetail('${p.symbol}')" style="cursor:pointer">
+          <td>${i + 1}</td>
+          <td>
+            ${p.icon_url ? `<img src="${p.icon_url}" width="20" height="20" style="border-radius:4px;vertical-align:middle;margin-right:6px" onerror="this.style.display='none'">` : ''}
+            <span class="stock-symbol">${p.symbol}</span><br>
+            <span class="stock-name">${p.name}</span>
+          </td>
+          <td><strong>${p.score}</strong> <span style="color:var(--text2);font-size:11px">(${p.categories.length} cat)</span></td>
+          <td>${p.categories.map(c => `<span class="card-badge ${catBadge(c)}">${c}</span>`).join(' ')}</td>
+          <td style="font-size:11px;color:var(--text2)">${screenerList}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderTabs() {
+      const tabs = document.getElementById('categoryTabs');
+      const cats = dashboardData.categories || [];
+      if (!activeTab && cats.length) activeTab = cats[0].id;
+
+      tabs.innerHTML = cats.map(c =>
+        `<button class="tab ${activeTab === c.id ? 'active' : ''}" onclick="switchTab(${c.id})">${c.name}</button>`
+      ).join('');
+    }
+
+    function switchTab(id) {
+      activeTab = id;
+      renderTabs();
+      renderActiveTab();
+    }
+
+    function renderActiveTab() {
+      const container = document.getElementById('screenerContent');
+      if (!activeTab || !dashboardData.screeners) {
+        container.innerHTML = '<div class="loading"><div class="spinner"></div><div>Loading...</div></div>';
+        return;
+      }
+
+      const cat = dashboardData.screeners[activeTab];
+      if (!cat) {
+        container.innerHTML = '<div class="loading">No data for this category yet.</div>';
+        return;
+      }
+
+      const templates = cat.templates || {};
+      const children = cat.children?.data?.children || cat.children?.data || [];
+      const items = Array.isArray(children) ? children : [];
+
+      if (!items.length && !Object.keys(templates).length) {
+        container.innerHTML = '<div class="loading">No screener results available.</div>';
+        return;
+      }
+
+      let html = '<div class="grid grid-2">';
+
+      for (const child of items) {
+        const tid = child.id || child.template_id;
+        const tpl = templates[tid];
+        const stockList = extractStocks(tpl);
+        const columns = tpl?.data?.columns || [];
+        const name = child.name || child.title || tpl?.data?.screen_name || `Screener #${tid}`;
+        const desc = child.description || tpl?.data?.screen_desc || '';
+        const totalRows = tpl?.data?.totalrows || stockList.length;
+
+        // Get first 2 column names for display
+        const colNames = columns.slice(0, 2).map(c => c.name);
+
+        html += `<div class="card screener-card" onclick="openScreenerDetail(${activeTab}, '${tid}')">
+          <div class="card-header">
+            <span class="card-title">${name}</span>
+            <span class="card-badge badge-blue">${totalRows} stocks</span>
+          </div>
+          ${desc ? `<div style="font-size:12px;color:var(--text2);margin-bottom:8px">${desc}</div>` : ''}
+          <table class="stock-table">
+            <thead><tr><th>Symbol</th>${colNames.map(c => `<th>${c}</th>`).join('')}</tr></thead>
+            <tbody>
+              ${stockList.slice(0, 5).map(s => {
+                const results = s.results || [];
+                return `<tr onclick="event.stopPropagation();openStockDetail('${s.symbol}')">
+                  <td>
+                    ${s.icon_url ? `<img src="${s.icon_url}" width="16" height="16" style="border-radius:3px;vertical-align:middle;margin-right:4px" onerror="this.style.display='none'">` : ''}
+                    <span class="stock-symbol">${s.symbol}</span>
+                  </td>
+                  ${results.slice(0, 2).map(r => `<td style="font-size:12px">${r.display || formatBigNum(r.raw) || '-'}</td>`).join('')}
+                  ${results.length < 2 ? '<td>-</td>'.repeat(Math.max(0, colNames.length - results.length)) : ''}
+                </tr>`;
+              }).join('')}
+              ${stockList.length > 5 ? `<tr><td colspan="${colNames.length + 1}" style="text-align:center;color:var(--text2);font-size:12px">+${stockList.length - 5} more...</td></tr>` : ''}
+            </tbody>
+          </table>
+        </div>`;
+      }
+
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    function renderMarketMovers() {
+      const movers = dashboardData.marketMovers || {};
+      const container = document.getElementById('marketMovers');
+      const types = [
+        { key: 'gainer', label: 'Top Gainer', badge: 'badge-green' },
+        { key: 'loser', label: 'Top Loser', badge: 'badge-red' },
+        { key: 'value', label: 'Top Value', badge: 'badge-blue' },
+        { key: 'volume', label: 'Top Volume', badge: 'badge-purple' },
+      ];
+
+      container.innerHTML = types.map(t => {
+        const moverList = movers[t.key]?.data?.mover_list || [];
+        return `<div class="card">
+          <div class="card-header">
+            <span class="card-title">${t.label}</span>
+            <span class="card-badge ${t.badge}">${moverList.length}</span>
+          </div>
+          ${moverList.slice(0, 5).map((m, i) => {
+            const sym = m.stock_detail?.code || '-';
+            const pct = m.change?.percentage || 0;
+            const price = m.price || 0;
+            const cls = pct > 0 ? 'price-up' : pct < 0 ? 'price-down' : 'price-flat';
+            return `<div class="mover-item" onclick="openStockDetail('${sym}')" style="cursor:pointer">
+              <span class="mover-rank">${i + 1}</span>
+              <span>
+                <span class="stock-symbol">${sym}</span>
+                <span style="font-size:11px;color:var(--text2);margin-left:4px">${formatPrice(price)}</span>
+              </span>
+              <span class="${cls}">${pct > 0 ? '+' : ''}${formatNum(pct)}%</span>
+            </div>`;
+          }).join('')}
+        </div>`;
+      }).join('');
+    }
+
+    // --- Detail views ---
+
+    async function openStockDetail(symbol) {
+      const panel = document.getElementById('detailPanel');
+      document.getElementById('detailOverlay').classList.add('open');
+      panel.innerHTML = `<button class="close-btn" onclick="closeDetail()">&times;</button>
+        <h2>${symbol}</h2>
+        <div class="loading"><div class="spinner"></div><div>Loading stock details...</div></div>`;
+
+      try {
+        const [info, keystats, perf, flow, indicator] = await Promise.all([
+          fetch(`/api/company/${symbol}/info`).then(r => r.json()).catch(() => null),
+          fetch(`/api/company/${symbol}/keystats`).then(r => r.json()).catch(() => null),
+          fetch(`/api/company/${symbol}/price-performance`).then(r => r.json()).catch(() => null),
+          fetch(`/api/company/${symbol}/foreign-flow`).then(r => r.json()).catch(() => null),
+          fetch(`/api/company/${symbol}/indicator`).then(r => r.json()).catch(() => null),
+        ]);
+
+        renderStockDetail(panel, symbol, { info, keystats, perf, flow, indicator });
+      } catch (e) {
+        panel.innerHTML = `<button class="close-btn" onclick="closeDetail()">&times;</button>
+          <h2>${symbol}</h2><div style="color:var(--red)">Error: ${e.message}</div>`;
+      }
+    }
+
+    function renderStockDetail(panel, symbol, data) {
+      const info = data.info?.data || data.info || {};
+      const ks = data.keystats?.data || data.keystats || {};
+      const perf = data.perf?.data || data.perf || {};
+      const flow = data.flow?.data || data.flow || {};
+      const ind = data.indicator?.data || data.indicator || {};
+
+      const ratios = ks.ratios || ks || {};
+      const latest = Array.isArray(ratios) ? ratios[0] || {} : ratios;
+
+      // Foreign flow visualization
+      const flowData = flow.chart_data || flow.data || [];
+      const flowItems = Array.isArray(flowData) ? flowData : [];
+      let foreignNet = 0, domesticNet = 0;
+      for (const f of flowItems) {
+        foreignNet += (f.foreign_buy || 0) - (f.foreign_sell || 0);
+        domesticNet += (f.domestic_buy || 0) - (f.domestic_sell || 0);
+      }
+      const totalFlow = Math.abs(foreignNet) + Math.abs(domesticNet) || 1;
+      const foreignPct = Math.round((Math.abs(foreignNet) / totalFlow) * 100);
+
+      panel.innerHTML = `
+        <button class="close-btn" onclick="closeDetail()">&times;</button>
+        <h2>${symbol} <span style="font-weight:400;font-size:14px;color:var(--text2)">${info.name || info.company_name || ''}</span></h2>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:16px">${info.sector || ''} ${info.sub_sector ? '/ ' + info.sub_sector : ''}</div>
+
+        <div class="stock-detail-grid">
+          <div class="card">
+            <div class="card-title" style="margin-bottom:12px">Key Statistics</div>
+            ${statRow('Market Cap', formatBigNum(latest.market_cap || info.market_cap))}
+            ${statRow('P/E Ratio', formatNum(latest.pe || latest.per))}
+            ${statRow('P/B Ratio', formatNum(latest.pbv || latest.pb))}
+            ${statRow('ROE', formatNum(latest.roe) + '%')}
+            ${statRow('ROA', formatNum(latest.roa) + '%')}
+            ${statRow('DER', formatNum(latest.der))}
+            ${statRow('EPS', formatNum(latest.eps))}
+            ${statRow('Dividend Yield', formatNum(latest.dividend_yield) + '%')}
+          </div>
+
+          <div class="card">
+            <div class="card-title" style="margin-bottom:12px">Price Performance</div>
+            ${renderPerfRows(perf)}
+          </div>
+
+          <div class="card">
+            <div class="card-title" style="margin-bottom:12px">Foreign vs Domestic Flow</div>
+            <div class="flow-bar">
+              <div class="foreign" style="width:${foreignPct}%"></div>
+              <div class="domestic" style="width:${100 - foreignPct}%"></div>
+            </div>
+            <div class="flow-legend">
+              <span class="leg-foreign">Foreign: ${formatBigNum(foreignNet)}</span>
+              <span class="leg-domestic">Domestic: ${formatBigNum(domesticNet)}</span>
+            </div>
+            ${statRow('Net Foreign', formatBigNum(foreignNet), foreignNet >= 0 ? 'price-up' : 'price-down')}
+            ${statRow('Net Domestic', formatBigNum(domesticNet), domesticNet >= 0 ? 'price-up' : 'price-down')}
+          </div>
+
+          <div class="card">
+            <div class="card-title" style="margin-bottom:12px">Research Indicator</div>
+            ${renderIndicator(ind)}
+          </div>
+        </div>
+      `;
+    }
+
+    function openScreenerDetail(catId, templateId) {
+      const cat = dashboardData.screeners[catId];
+      if (!cat) return;
+      const tpl = cat.templates[templateId];
+      if (!tpl) return;
+
+      const children = cat.children?.data?.children || cat.children?.data || [];
+      const items = Array.isArray(children) ? children : [];
+      const child = items.find(c => String(c.id || c.template_id) === String(templateId));
+      const name = child?.name || child?.title || tpl?.data?.screen_name || `Screener #${templateId}`;
+      const desc = child?.description || tpl?.data?.screen_desc || '';
+      const columns = tpl?.data?.columns || [];
+      const stockList = extractStocks(tpl);
+      const totalRows = tpl?.data?.totalrows || stockList.length;
+
+      const panel = document.getElementById('detailPanel');
+      document.getElementById('detailOverlay').classList.add('open');
+
+      panel.innerHTML = `
+        <button class="close-btn" onclick="closeDetail()">&times;</button>
+        <h2>${name} <span class="card-badge badge-blue">${totalRows} stocks</span></h2>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:16px">${desc}</div>
+        <div class="card" style="overflow-x:auto">
+          <table class="stock-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Symbol</th>
+                ${columns.map(c => `<th>${c.name}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody>
+              ${stockList.map((s, i) => {
+                return `<tr onclick="openStockDetail('${s.symbol}')" style="cursor:pointer">
+                  <td>${i + 1}</td>
+                  <td>
+                    ${s.icon_url ? `<img src="${s.icon_url}" width="18" height="18" style="border-radius:3px;vertical-align:middle;margin-right:4px" onerror="this.style.display='none'">` : ''}
+                    <span class="stock-symbol">${s.symbol}</span><br>
+                    <span class="stock-name">${s.name}</span>
+                  </td>
+                  ${(s.results || []).map(r => `<td style="font-size:12px">${r.display || formatBigNum(r.raw) || '-'}</td>`).join('')}
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function closeDetail() {
+      document.getElementById('detailOverlay').classList.remove('open');
+    }
+
+    // --- Helpers ---
+
+    function statRow(label, value, cls = '') {
+      return `<div class="stat-row"><span class="stat-label">${label}</span><span class="stat-value ${cls}">${value || '-'}</span></div>`;
+    }
+
+    function renderPerfRows(perf) {
+      const d = perf.performances || perf || {};
+      const periods = Array.isArray(d) ? d : [];
+      if (periods.length) {
+        return periods.map(p => {
+          const change = p.change_percentage || p.percent_change || 0;
+          const cls = change > 0 ? 'price-up' : change < 0 ? 'price-down' : 'price-flat';
+          return statRow(p.period || p.label || '', `${change > 0 ? '+' : ''}${formatNum(change)}%`, cls);
+        }).join('');
+      }
+      // Try object keys
+      const keys = ['1d', '5d', '1m', '3m', '6m', 'ytd', '1y'];
+      return keys.map(k => {
+        const v = d[k] || d[`change_${k}`];
+        if (v === undefined) return '';
+        const cls = v > 0 ? 'price-up' : v < 0 ? 'price-down' : 'price-flat';
+        return statRow(k.toUpperCase(), `${v > 0 ? '+' : ''}${formatNum(v)}%`, cls);
+      }).join('') || statRow('N/A', '-');
+    }
+
+    function renderIndicator(ind) {
+      if (!ind || (!ind.indicators && !ind.signal && !ind.recommendation)) {
+        return '<div style="color:var(--text2);font-size:13px">No indicator data</div>';
+      }
+      const indicators = ind.indicators || [];
+      if (Array.isArray(indicators) && indicators.length) {
+        return indicators.map(i => {
+          const signal = i.signal || i.value || '-';
+          const cls = signal === 'BUY' || signal === 'STRONG_BUY' ? 'price-up' : signal === 'SELL' || signal === 'STRONG_SELL' ? 'price-down' : 'price-flat';
+          return statRow(i.name || i.indicator || '', `<span class="${cls}">${signal}</span>`);
+        }).join('');
+      }
+      return statRow('Signal', ind.signal || ind.recommendation || '-');
+    }
+
+    function formatPrice(v) {
+      if (v === '-' || v == null) return '-';
+      return Number(v).toLocaleString('id-ID');
+    }
+
+    function formatNum(v) {
+      if (v == null || isNaN(v)) return '0';
+      return Number(v).toFixed(2);
+    }
+
+    function formatBigNum(v) {
+      if (v == null || v === '-' || isNaN(v)) return '-';
+      const n = Number(v);
+      if (Math.abs(n) >= 1e12) return (n / 1e12).toFixed(2) + 'T';
+      if (Math.abs(n) >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+      if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+      if (Math.abs(n) >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+      return n.toLocaleString('id-ID');
+    }
+
+    function extractStocks(tpl) {
+      const calcs = tpl?.data?.calcs || tpl?.data?.stocks || [];
+      if (!Array.isArray(calcs)) return [];
+      return calcs.map(c => {
+        if (c.company) {
+          return { symbol: c.company.symbol, name: c.company.name, icon_url: c.company.icon_url, results: c.results || [] };
+        }
+        return { symbol: c.symbol || c.company_symbol || c.code, name: c.name || c.company_name || '', results: [], icon_url: '' };
+      }).filter(s => s.symbol);
+    }
+
+    function catBadge(catName) {
+      const map = { 'Valuation': 'badge-green', 'Fundamental': 'badge-blue', 'Technical': 'badge-yellow', 'Bandarmology': 'badge-purple', 'Dividend': 'badge-green', 'Popular': 'badge-yellow' };
+      return map[catName] || 'badge-blue';
+    }
+
+    function setupAutoRefresh() {
+      if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+      const interval = dashboardData.isTradingHours ? 15 * 60 * 1000 : 60 * 60 * 1000;
+      autoRefreshTimer = setInterval(fetchDashboard, interval);
+    }
+
+    // Keyboard
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeDetail();
+    });
+
+    // Token management
+    async function checkToken() {
+      try {
+        const res = await fetch('/api/token');
+        const data = await res.json();
+        if (!data.hasToken) {
+          document.getElementById('tokenBanner').classList.add('show');
+        }
+      } catch (e) {}
+    }
+
+    function toggleTokenBanner() {
+      document.getElementById('tokenBanner').classList.toggle('show');
+    }
+
+    async function saveToken() {
+      const input = document.getElementById('tokenInput');
+      let token = input.value.trim();
+      if (!token) return alert('Please paste a token');
+      // Strip "Bearer " prefix if included
+      if (token.toLowerCase().startsWith('bearer ')) token = token.slice(7);
+      try {
+        const res = await fetch('/api/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          document.getElementById('tokenBanner').classList.remove('show');
+          input.value = '';
+          if (data.data) {
+            dashboardData = data.data;
+            render();
+          }
+        } else {
+          alert('Error: ' + (data.error || 'Unknown'));
+        }
+      } catch (e) {
+        alert('Failed: ' + e.message);
+      }
+    }
+
+    // Init
+    checkToken();
+    fetchDashboard();
+  </script>
+</body>
+</html>

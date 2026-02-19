@@ -1,0 +1,15 @@
+{
+  "name": "bandarmologger",
+  "version": "1.0.0",
+  "description": "Stockbit Screener & Bandar Flow Dashboard",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "node-cron": "^3.0.3",
+    "dotenv": "^16.4.5"
+  }
+}
