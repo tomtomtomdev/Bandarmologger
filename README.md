@@ -4,11 +4,10 @@ Stock screener dashboard for IDX (Indonesia Stock Exchange) powered by Stockbit 
 
 ## Features
 
-- **Best Picks** — Stocks appearing across multiple screener categories (Valuation + Fundamental + Bandarmology), ranked by cross-category score
+- **Best Picks** — Stocks appearing across multiple screener categories, ranked by cross-category score and grouped per category
 - **6 Screener Categories** — Valuation, Fundamental, Technical, Bandarmology, Dividend, Popular — each with multiple guru templates
-- **Screener Detail** — Full stock list per template with all calculated columns (Bandar Value, P/E, PBV, ROE, etc.)
+- **Screener Detail with Full Pagination** — Opens with cached first 25 stocks, then progressively loads all remaining pages with live progress
 - **Stock Detail** — Key statistics, price performance, foreign vs domestic flow, research indicators
-- **Market Movers** — Top Gainer, Loser, Value, Volume
 - **Auto-Refresh** — Every 15 minutes during IDX trading hours (Mon-Fri 09:00-15:15 WIB), daily on non-trading days
 - **Token Management** — In-app UI to paste and save Stockbit Bearer token
 
@@ -97,10 +96,10 @@ Bandarmologger/
 
 | Endpoint | Description |
 |---|---|
-| `GET /api/dashboard` | All cached data (presets, screeners, best picks, market movers) |
+| `GET /api/dashboard` | All cached data (presets, screeners, best picks, categories) |
 | `GET /api/screener/presets` | Screener categories |
 | `GET /api/screener/presets/:parentId` | Screener templates within a category |
-| `GET /api/screener/templates/:id` | Stock results for a screener template |
+| `GET /api/screener/templates/:id?page=N&limit=N` | Stock results for a screener template (paginated) |
 | `GET /api/company/:symbol/info` | Company info |
 | `GET /api/company/:symbol/keystats` | Key financial ratios (P/E, PBV, ROE, etc.) |
 | `GET /api/company/:symbol/price-performance` | Price performance across timeframes |
@@ -109,7 +108,6 @@ Bandarmologger/
 | `GET /api/company/:symbol/detectors` | Market detectors |
 | `GET /api/company/:symbol/financials` | Financial statements |
 | `GET /api/company/:symbol/indicator` | Research indicator signals |
-| `GET /api/market-movers/:type` | Market movers (gainer, loser, value, volume) |
 | `GET /api/trending` | Trending stocks |
 | `GET /api/status` | Scheduler status |
 | `POST /api/refresh` | Force data refresh |
@@ -129,9 +127,9 @@ Bandarmologger/
 
 ## Best Picks Algorithm
 
-Stocks are scored by how many screener templates they appear in across Valuation (28), Fundamental (31), and Bandarmology (32) categories. Sorted by:
+Stocks are scored by how many screener templates they appear in across all 6 categories. Sorted by:
 
-1. Number of distinct categories (stocks in all 3 rank highest)
+1. Number of distinct categories (stocks in more categories rank highest)
 2. Total screener appearances
 
-This surfaces stocks that are simultaneously cheap (valuation), fundamentally strong, and being accumulated by big money.
+Top picks are displayed grouped by category on the dashboard, with per-category score ranking.
