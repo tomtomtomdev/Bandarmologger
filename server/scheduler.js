@@ -9,7 +9,6 @@ let cache = {
   presets: null,
   screeners: {},       // { parentId: { children, templates: { id: data } } }
   bestPicks: [],
-  marketMovers: {},
   trending: null,
   lastRefresh: null,
   refreshing: false,
@@ -90,17 +89,11 @@ async function refresh() {
       cache.screeners[cat.id] = { category: cat, children, templates };
     }
 
-    // 3. Market movers
-    for (const type of ['gainer', 'loser', 'value', 'volume']) {
-      const data = await fetchSafe(() => api.getMarketMovers(type, 10), `movers-${type}`);
-      if (data) cache.marketMovers[type] = data;
-    }
-
-    // 4. Trending
+    // 3. Trending
     const trending = await fetchSafe(() => api.getTrending(), 'trending');
     if (trending) cache.trending = trending;
 
-    // 5. Compute best picks from screener results
+    // 4. Compute best picks from screener results
     computeBestPicks();
 
     cache.lastRefresh = new Date().toISOString();
@@ -138,10 +131,10 @@ function extractStocksFromTemplate(tpl) {
 }
 
 function computeBestPicks() {
-  // Aggregate stocks appearing across Valuation + Fundamental + Bandarmology screeners
+  // Aggregate stocks appearing across all screener categories
   const stockScores = {};
 
-  for (const catId of [28, 31, 32]) { // Valuation, Fundamental, Bandarmology
+  for (const catId of SCREENER_CATEGORIES.map(c => c.id)) {
     const cat = cache.screeners[catId];
     if (!cat) continue;
 
@@ -178,7 +171,6 @@ function getCachedData() {
     presets: cache.presets,
     screeners: cache.screeners,
     bestPicks: cache.bestPicks,
-    marketMovers: cache.marketMovers,
     trending: cache.trending,
     lastRefresh: cache.lastRefresh,
     isTradingDay: isTradingDay(),

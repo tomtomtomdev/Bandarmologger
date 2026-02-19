@@ -36,7 +36,8 @@ app.get('/api/screener/presets/:parentId', async (req, res) => {
 app.get('/api/screener/templates/:id', async (req, res) => {
   try {
     const limit = req.query.limit || 25;
-    const data = await api.getScreenerTemplate(req.params.id, limit);
+    const page = req.query.page || 1;
+    const data = await api.getScreenerTemplate(req.params.id, limit, page);
     res.json(data);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -88,17 +89,6 @@ app.get('/api/company/:symbol/foreign-flow', async (req, res) => {
 app.get('/api/company/:symbol/running-trade', async (req, res) => {
   try {
     const data = await api.getRunningTradeChart(req.params.symbol);
-    res.json(data);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// Market movers
-app.get('/api/market-movers/:type', async (req, res) => {
-  try {
-    const limit = req.query.limit || 10;
-    const data = await api.getMarketMovers(req.params.type, limit);
     res.json(data);
   } catch (e) {
     res.status(500).json({ error: e.message });

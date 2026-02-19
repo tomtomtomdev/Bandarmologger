@@ -71,8 +71,8 @@ async function getScreenerPresetChildren(parentId) {
   return apiFetch(`/screener/preset?mobile=1&parent_id=${parentId}`);
 }
 
-async function getScreenerTemplate(templateId, limit = 25) {
-  return apiFetch(`/screener/templates/${templateId}?limit=${limit}&type=TEMPLATE_TYPE_GURU`);
+async function getScreenerTemplate(templateId, limit = 25, page = 1) {
+  return apiFetch(`/screener/templates/${templateId}?limit=${limit}&page=${page}&type=TEMPLATE_TYPE_GURU`);
 }
 
 async function getScreenerFavorites() {
