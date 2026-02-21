@@ -234,7 +234,7 @@
     <div class="tabs" id="categoryTabs"></div>
 
     <!-- Top Picks per Category -->
-    <div id="categoryPicks" style="margin-bottom: 16px;"></div>
+    <div class="grid grid-2" id="categoryPicks" style="margin-bottom: 16px;"></div>
 
     <!-- Screener Content -->
     <div id="screenerContent">
@@ -253,7 +253,7 @@
   <script>
     let dashboardData = null;
     let activeTab = null;
-    let activePickCategory = 'all';
+
     let autoRefreshTimer = null;
 
     async function fetchDashboard() {
@@ -405,6 +405,7 @@
     function switchTab(id) {
       activeTab = id;
       renderTabs();
+      renderCategoryPicks();
       renderActiveTab();
     }
 
@@ -484,33 +485,24 @@
         return;
       }
 
-      // Find categories that have picks
+      // Find categories that have picks, filtered by active tab
+      const activeCat = categories.find(c => c.id === activeTab);
       const catsWithPicks = categories.filter(cat =>
-        picks.some(p => (p.categories || []).includes(cat.name))
+        picks.some(p => (p.categories || []).includes(cat.name)) &&
+        (!activeCat || cat.id === activeTab)
       );
 
-      // Build filter buttons
-      let html = '<div class="tabs" style="margin-bottom:12px">';
-      html += `<button class="tab ${activePickCategory === 'all' ? 'active' : ''}" onclick="switchPickCategory('all')">All</button>`;
+      let html = '';
       for (const cat of catsWithPicks) {
-        const escaped = cat.name.replace(/'/g, "\\'");
-        html += `<button class="tab ${activePickCategory === cat.name ? 'active' : ''}" onclick="switchPickCategory('${escaped}')">${cat.name}</button>`;
-      }
-      html += '</div>';
-
-      // Filter picks by selected category
-      let filtered;
-      if (activePickCategory === 'all') {
-        filtered = [...picks].sort((a, b) => b.score - a.score);
-      } else {
-        filtered = picks.filter(p => (p.categories || []).includes(activePickCategory))
+        const catPicks = picks.filter(p => (p.categories || []).includes(cat.name))
           .sort((a, b) => b.score - a.score);
-      }
 
-      // Render pick list
-      html += '<div class="card">';
-      if (filtered.length) {
-        html += filtered.map((p, i) => {
+        html += `<div class="card">
+          <div class="card-header">
+            <span class="card-title">${cat.name}</span>
+            <span class="card-badge ${catBadge(cat.name)}">${catPicks.length} picks</span>
+          </div>`;
+        html += catPicks.map((p, i) => {
           return `<div class="pick-item" onclick="openStockDetail('${p.symbol}')">
             <span class="pick-rank">${i + 1}</span>
             <span>
@@ -520,17 +512,10 @@
             <span class="pick-score">score ${p.score}</span>
           </div>`;
         }).join('');
-      } else {
-        html += '<div style="text-align:center;padding:16px;color:var(--text2)">No picks for this category</div>';
+        html += '</div>';
       }
-      html += '</div>';
 
       container.innerHTML = html;
-    }
-
-    function switchPickCategory(category) {
-      activePickCategory = category;
-      renderCategoryPicks();
     }
 
     // --- Detail views ---
