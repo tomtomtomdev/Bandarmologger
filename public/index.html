@@ -516,7 +516,7 @@
               <span class="pick-score">score ${p.score}</span>
             </div>`;
           }).join('')}
-          ${sorted.length > 5 ? `<div style="text-align:center;padding:6px 0;font-size:12px;color:var(--text2)">+${sorted.length - 5} more</div>` : ''}
+          ${sorted.length > 5 ? `<div onclick="openCategoryPicksDetail('${cat.name.replace(/'/g, "\\'")}')" style="text-align:center;padding:6px 0;font-size:12px;color:var(--accent);cursor:pointer">+${sorted.length - 5} more</div>` : ''}
         </div>`;
       }).filter(Boolean).join('');
     }
@@ -608,6 +608,46 @@
             <div class="card-title" style="margin-bottom:12px">Research Indicator</div>
             ${renderIndicator(ind)}
           </div>
+        </div>
+      `;
+    }
+
+    function openCategoryPicksDetail(categoryName) {
+      const allPicks = dashboardData.bestPicks || [];
+      const catPicks = allPicks.filter(p => (p.categories || []).includes(categoryName));
+      const sorted = [...catPicks].sort((a, b) => b.score - a.score);
+
+      const panel = document.getElementById('detailPanel');
+      document.getElementById('detailOverlay').classList.add('open');
+
+      panel.innerHTML = `
+        <button class="close-btn" onclick="closeDetail()">&times;</button>
+        <h2>${categoryName} <span class="card-badge badge-blue">${sorted.length} picks</span></h2>
+        <div class="card" style="overflow-x:auto">
+          <table class="stock-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Symbol</th>
+                <th>Score</th>
+                <th>Categories</th>
+                <th>Screeners</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sorted.map((p, i) => `<tr onclick="openStockDetail('${p.symbol}')" style="cursor:pointer">
+                <td>${i + 1}</td>
+                <td>
+                  ${p.icon_url ? `<img src="${p.icon_url}" width="18" height="18" style="border-radius:3px;vertical-align:middle;margin-right:4px" onerror="this.style.display='none'">` : ''}
+                  <span class="stock-symbol">${p.symbol}</span><br>
+                  <span class="stock-name">${p.name || ''}</span>
+                </td>
+                <td><span class="pick-score">score ${p.score}</span></td>
+                <td style="font-size:12px">${(p.categories || []).join(', ')}</td>
+                <td style="font-size:11px;color:var(--text2);max-width:200px">${(p.screeners || []).join(', ')}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
         </div>
       `;
     }
